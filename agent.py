@@ -10,53 +10,42 @@ langfuse = Langfuse(
 
 agent = build_graph()
 
-
 def start_trace(text: str):
     """
-    Compatible with both Langfuse SDK v2 and v3.
+    Updated for latest Langfuse SDK — always uses trace() and span().
     """
-
-    # SDK v3 uses create_trace()
-    if hasattr(langfuse, "create_trace"):
-        trace = langfuse.create_trace(name="agent", input=text)
-        span = trace.create_span(name="agent_input", input=text)
-        return trace, span
-
-    # SDK v2 uses trace()
-    elif hasattr(langfuse, "trace"):
+    try:
         trace = langfuse.trace(name="agent", input=text)
         span = trace.span(name="agent_input", input=text)
         return trace, span
-
-    else:
-        raise RuntimeError("Unsupported Langfuse SDK version - no trace() or create_trace() found.")
+    except Exception as e:
+        # If SDK does not support tracing, fallback gracefully
+        print("⚠ Langfuse tracing disabled due to:", e)
+        return None, None
 
 
 def end_trace(trace, span, output):
-    """Ends trace + span safely for both SDK versions."""
+    """Safely close span + trace if they exist."""
+    if span:
+        try:
+            span.end(output=output)
+        except:
+            pass
 
-    # SDK v3 methods
-    if hasattr(span, "end"):
-        span.end(output=output)
-    else:
-        span.update(output=output)
-
-    if hasattr(trace, "end"):
-        trace.end(output=output)
-    else:
-        trace.update(output=output)
+    if trace:
+        try:
+            trace.end(output=output)
+        except:
+            pass
 
 
 def ask(text: str) -> str:
     trace, span = start_trace(text)
 
-    # Run agent
     result = agent.invoke({"input": text, "span": span})
     final_answer = result["assistant"]
 
-    # Close trace + span
     end_trace(trace, span, final_answer)
-
     return final_answer
 
 
