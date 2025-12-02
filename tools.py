@@ -145,4 +145,3 @@ TOOLS = {
     "rag_add": rag_add,
     "calendar": get_calendar,
 }
-
