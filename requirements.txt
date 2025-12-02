@@ -6,5 +6,5 @@ langchain
 langchain-openai
 langgraph
 langfuse
-pinecone-client
+pinecone
 tiktoken
